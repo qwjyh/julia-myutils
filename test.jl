@@ -15,31 +15,14 @@ plot(
 # linear regression
 reg = lm(@formula(y ~ x), df)
 
+include("linearmodelplots_recipe.jl")
 
-"""
-returns predictor function
-interval = nothing(default)
-  --> which returns prediction::AbstractFloat
-interval = :confidence or :prediction
-  --> which returns Tuple of (prediction, lower, upper)
-"""
-function get_prediction_function(
-        reg::StatsModels.TableRegressionModel; 
-        interval::Union{Symbol,Nothing} = nothing,
-        level::Real = 0.95
-    )
-    if interval == nothing
-        x -> begin
-            input_term = reg.mf.f.rhs.terms[2] |> Symbol
-            input_df = DataFrame(input_term => [x])
-            predict(reg, input_df)[1]
-        end
-    else
-        x -> begin
-            input_term = reg.mf.f.rhs.terms[2] |> Symbol
-            input_df = DataFrame(input_term => [x])
-            predict(reg, input_df, interval = interval, level = level)[1, :] |> Tuple
-        end
-    end
-end
+plot!(
+      df.x,
+      (x -> get_prediction_function(reg, interval = :prediction)(x).prediction).(df.x),
+      ribbon = (
+          (x -> get_prediction_function(reg, interval = :confidence)(x).interval.upper).(1:10),
+          (x -> get_prediction_function(reg, interval = :confidence)(x).interval.lower).(1:10)
+      )
+)
 
